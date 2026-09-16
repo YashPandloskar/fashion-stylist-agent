@@ -1,0 +1,26 @@
+# ── Core agent framework ──────────────────────────────────────────────────────
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-ollama>=0.2.0        # local LLM via Ollama
+langchain-openai>=0.2.0        # OpenAI GPT-4o (final demo only)
+
+# ── RAG & embeddings ──────────────────────────────────────────────────────────
+chromadb>=0.5.0
+transformers>=4.44.0           # FashionCLIP model
+torch>=2.3.0                   # GPU inference
+Pillow>=10.0.0                 # image handling
+
+# ── Image generation ──────────────────────────────────────────────────────────
+diffusers>=0.30.0              # Stable Diffusion XL (local)
+accelerate>=0.33.0             # required by diffusers
+openai>=1.40.0                 # DALL-E 3 (final demo)
+
+# ── Dataset ───────────────────────────────────────────────────────────────────
+datasets>=2.20.0               # HuggingFace datasets (Polyvore)
+
+# ── API & frontend ────────────────────────────────────────────────────────────
+fastapi>=0.112.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.8.0
+streamlit>=1.37.0
+requests>=2.32.0
