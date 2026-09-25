@@ -7,6 +7,8 @@ For final demo: swap USE_OPENAI=true in .env to use GPT-4o + DALL-E 3.
 import os
 import json
 from agent.state import AgentState
+
+MAX_COMPOSE_RETRIES = 2  # so the composer runs at most 3 times per request
 from rag.retriever import retrieve_outfit_items
 from generation.image_gen import generate_outfit_image
 
@@ -91,8 +93,12 @@ def compose_outfit(state: AgentState) -> AgentState:
     coherent outfit (top, bottom, shoes, optional accessory) using
     structured JSON output for reliable downstream parsing.
     """
-    if state.error or not state.retrieved_items:
+    # An error from an earlier tool stops the run; an error left by our own failed
+    # attempt (compose_retry_pending) does not, so that we can try again
+    if (state.error and not state.compose_retry_pending) or not state.retrieved_items:
         return state
+    state.compose_retry_pending = False
+    state.error = None
 
     llm = _get_llm()
 
@@ -119,8 +125,9 @@ Respond ONLY with valid JSON in this exact format:
   "top": {{"index": <number>, "name": "<name>", "reason": "<why this works>"}},
   "bottom": {{"index": <number>, "name": "<name>", "reason": "<why this works>"}},
   "shoes": {{"index": <number>, "name": "<name>", "reason": "<why this works>"}},
-  "accessory": {{"index": <number>, "name": "<name>", "reason": "<why this works>"}} // optional
-}}"""
+  "accessory": {{"index": <number>, "name": "<name>", "reason": "<why this works>"}}
+}}
+The "accessory" entry is optional. Do not add comments or any text outside the JSON."""
 
     response = llm.invoke(prompt)
 
@@ -129,7 +136,14 @@ Respond ONLY with valid JSON in this exact format:
         raw = response.content.strip().replace("```json", "").replace("```", "")
         state.outfit_composition = json.loads(raw)
     except json.JSONDecodeError:
-        state.error = "Outfit composer returned malformed JSON. Will retry."
+        if state.retry_count < MAX_COMPOSE_RETRIES:
+            state.retry_count += 1
+            state.compose_retry_pending = True
+            state.error = "Outfit composer returned malformed JSON. Will retry."
+        else:
+            state.error = (
+                f"Outfit composer returned malformed JSON after {MAX_COMPOSE_RETRIES} retries."
+            )
 
     return state
 

@@ -21,14 +21,11 @@ from agent.tools import (
 
 def should_retry_composition(state: AgentState) -> str:
     """
-    If the outfit composer returned an error AND we haven't exceeded
-    the retry limit, loop back. Otherwise proceed to image generation.
+    Loop back to the composer only if it asked for a retry. The composer owns the
+    retry bookkeeping (see compose_outfit): LangGraph does not keep changes made to
+    the state inside a routing function, so this function must only read it.
     """
-    if state.error and "malformed JSON" in state.error and state.retry_count < 2:
-        state.retry_count += 1
-        state.error = None  # clear error before retry
-        return "retry"
-    return "continue"
+    return "retry" if state.compose_retry_pending else "continue"
 
 
 # ── Build the graph ────────────────────────────────────────────────────────────

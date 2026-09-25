@@ -20,4 +20,5 @@ class AgentState:
 
     # --- Control flow ---
     error: Optional[str] = None
-    retry_count: int = 0
+    retry_count: int = 0                        # composer retries used so far
+    compose_retry_pending: bool = False         # set by the composer, read by the graph's router
